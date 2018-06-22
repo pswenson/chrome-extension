@@ -14,5 +14,14 @@
     "activeTab",
     "https://jira.secondlife.com/",
     "storage"
-  ]
+  ],
+  "background": {
+    "scripts": ["main.js"],
+    "persistent": false
+  },
+  "content_scripts": [ {
+    "all_frames": true,
+    "js": ["main.js"],
+    "matches": [ "http://*/*", "https://*/*" ]
+  } ]
 }
