@@ -1,9 +1,13 @@
+// utility to get a dom element
+const getElement = (elementId) => document.getElementById(elementId);
+
+
 function getJIRAFeed(callback, errorCallback) {
   var user = document.getElementById("user").value;
   if (user == undefined) return;
 
-  var url = "https://jira.secondlife.com/activity?maxResults=50&streams=user+IS+" + user + "&providers=issues";
-  make_request(url, "").then(function (response) {
+  var url = `https://jira.secondlife.com/activity?maxResults=50&streams=user+IS+${user}&providers=issues`;
+  http_request(url, "").then(function (response) {
     // empty response type allows the request.responseXML property to be returned in the makeRequest call
     callback(url, response);
   }, errorCallback);
@@ -15,9 +19,9 @@ function getJIRAFeed(callback, errorCallback) {
  *   formatted for rendering.
  * @param {function(string)} errorCallback - Called when the query or call fails.
  */
-async function getQueryResults(s, callback, errorCallback) {
+async function getQueryResults(searchTerm, callback, errorCallback) {
   try {
-    var response = await make_request(s, "json");
+    var response = await http_request(searchTerm, "json");
     //todo this doesn't belong here, got back to getQueryResults caller and handle there
     callback(displayQueryResults(response));
   } catch (error) {
@@ -25,7 +29,7 @@ async function getQueryResults(s, callback, errorCallback) {
   }
 }
 
-function make_request(url, responseType) {
+function http_request(url, responseType) {
   return new Promise(function (resolve, reject) {
     var req = new XMLHttpRequest();
     req.open('GET', url);
@@ -50,7 +54,6 @@ function make_request(url, responseType) {
       }
     }
 
-    // Make the request
     req.send();
   });
 }
@@ -78,6 +81,7 @@ function buildJQL() {
   return jqlUrl;
 }
 
+// rename to build html results
 function displayQueryResults(response) {
 //todo parse the response + create HTML
 // 
@@ -85,12 +89,16 @@ function displayQueryResults(response) {
 // results.json in the "json_results" folder contains a sample of the API response
 // hint: you may run the application as well if you fix the bug. 
 // 
-  console.log("response=", response);
-  console.log("issues=", response.issues);
+  let issues = response.issues;
+  // is a for in or for of appropriate?
+  var text = "";
+  for (var issueCount = 0; issueCount < issues.length; issueCount++) {
+    let issue = issues[issueCount];
+    text +=  `<a href="${issue.self}">${issue.key}</a> | ${issue.fields.summary}  | <img src="${issue.fields.status.iconUrl}"><br/>`;
+  }
+  console.log("issues", issues);
 
-
-
-  return '<p>There may be results, but you must read the response and display them!</p>';
+  return `<p>${text}</p>`;
 
 }
 
@@ -105,7 +113,7 @@ async function checkProjectExists() {
   console.log("HI!");
   try {
     //todo the SUN project is hard-coded
-    return await make_request("https://jira.secondlife.com/rest/api/2/project/SUN", "json");
+    return await http_request("https://jira.secondlife.com/rest/api/2/project/SUN", "json");
     //todo force error and see what happens
   } catch (errorMessage) {
     document.getElementById('status').innerHTML = 'ERROR. ' + errorMessage;
