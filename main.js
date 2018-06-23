@@ -2,7 +2,7 @@
 const getElement = (elementId) => document.getElementById(elementId);
 
 
-function getJIRAFeed(callback, errorCallback) {
+const getJIRAFeed = (callback, errorCallback) => {
   var user = getElement("user").value;
   if (user == undefined) return;
 
@@ -19,7 +19,7 @@ function getJIRAFeed(callback, errorCallback) {
  *   formatted for rendering.
  * @param {function(string)} errorCallback - Called when the query or call fails.
  */
-async function getQueryResults(searchTerm, callback, errorCallback) {
+const getQueryResults = async (searchTerm, callback, errorCallback) => {
   try {
     var response = await http_request(searchTerm, "json");
     //todo this doesn't belong here, got back to getQueryResults caller and handle there
@@ -29,7 +29,7 @@ async function getQueryResults(searchTerm, callback, errorCallback) {
   }
 }
 
-function http_request(url, responseType) {
+const http_request = (url, responseType) => {
   return new Promise(function (resolve, reject) {
     var req = new XMLHttpRequest();
     req.open('GET', url);
@@ -58,8 +58,7 @@ function http_request(url, responseType) {
   });
 }
 
-
-function loadSavedOptions() {
+const loadSavedOptions = () => {
   chrome.storage.sync.get({
     project: 'Sunshine',
     user: 'nyx.linden'
@@ -72,7 +71,7 @@ function loadSavedOptions() {
 //todo should these be constants?
 // build the jira query
 //todo ideally pass in values here instead of reading from document
-function buildJQL() {
+const buildJQL = () => {
   var callbackBase = "https://jira.secondlife.com/rest/api/2/search?jql=";
   var project = getElement("project").value;
   var status = getElement("statusSelect").value;
@@ -82,7 +81,7 @@ function buildJQL() {
 }
 
 // rename to build html results
-function displayQueryResults(response) {
+const displayQueryResults = (response) => {
 //todo parse the response + create HTML
 // 
 // Create HTML output to display the search results.
@@ -103,13 +102,13 @@ function displayQueryResults(response) {
 }
 
 // utility 
-function domify(str) {
+const domify = (str) => {
   var dom = (new DOMParser()).parseFromString('<!doctype html><body>' + str, 'text/html');
   return dom.body.textContent;
 }
 
 
-async function checkProjectExists() {
+const checkProjectExists = async () =>  {
   console.log("HI!");
   try {
     //todo the SUN project is hard-coded
