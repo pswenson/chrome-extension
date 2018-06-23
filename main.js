@@ -7,7 +7,7 @@ const getJIRAFeed = (callback, errorCallback) => {
   if (user == undefined) return;
 
   var url = `https://jira.secondlife.com/activity?maxResults=50&streams=user+IS+${user}&providers=issues`;
-  http_request(url, "").then(function (response) {
+  http_request(url, "").then( (response) => {
     // empty response type allows the request.responseXML property to be returned in the makeRequest call
     callback(url, response);
   }, errorCallback);
@@ -15,7 +15,7 @@ const getJIRAFeed = (callback, errorCallback) => {
 
 /**
  * @param {string} searchTerm - Search term for JIRA Query.
- * @param {function(string)} callback - Called when the query results have been
+ * @param {ß(string)} callback - Called when the query results have been
  *   formatted for rendering.
  * @param {function(string)} errorCallback - Called when the query or call fails.
  */
@@ -30,12 +30,12 @@ const getQueryResults = async (searchTerm, callback, errorCallback) => {
 }
 
 const http_request = (url, responseType) => {
-  return new Promise(function (resolve, reject) {
+  return new Promise( (resolve, reject) => {
     var req = new XMLHttpRequest();
     req.open('GET', url);
     req.responseType = responseType;
 
-    req.onload = function () {
+    req.onload = () => {
       var response = responseType ? req.response : req.responseXML;
       if (response && response.errorMessages && response.errorMessages.length > 0) {
         reject(response.errorMessages[0]);
@@ -45,10 +45,10 @@ const http_request = (url, responseType) => {
     };
 
     // Handle network errors
-    req.onerror = function () {
+    req.onerror = () => {
       reject(Error("Network Error"));
     }
-    req.onreadystatechange = function () {
+    req.onreadystatechange = () => {
       if (req.readyState == 4 && req.status == 401) {
         reject("You must be logged in to JIRA to see this project.");
       }
@@ -62,7 +62,7 @@ const loadSavedOptions = () => {
   chrome.storage.sync.get({
     project: 'Sunshine',
     user: 'nyx.linden'
-  }, function (items) {
+  }, (items) => {
     getElement('project').value = items.project;
     getElement('user').value = items.user;
   });
@@ -107,7 +107,6 @@ const domify = (str) => {
   return dom.body.textContent;
 }
 
-
 const checkProjectExists = async () =>  {
   console.log("HI!");
   try {
@@ -122,21 +121,21 @@ const checkProjectExists = async () =>  {
 
 // Setup
 //todo this function is way too big, break it up!
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   console.log("DOM!");
   // if logged in, setup listeners
   //TODO handle if project doesn't exist, show error message?
 
-  checkProjectExists().then(function () {
+  checkProjectExists().then( () => {
     loadSavedOptions();
     // query click handler
-    getElement("query").onclick = function () {
+    getElement("query").onclick = () => {
       // build query
       let jiraQueryUrl = buildJQL();
       getElement('status').innerHTML = 'Performing JIRA search for ' + jiraQueryUrl;
       getElement('status').hidden = false;
       // perform the search
-      getQueryResults(jiraQueryUrl, function (return_val) {
+      getQueryResults(jiraQueryUrl, (return_val) => {
         // render the results
         getElement('status').innerHTML = 'Query term: ' + jiraQueryUrl + '\n';
         getElement('status').hidden = false;
@@ -145,16 +144,16 @@ document.addEventListener('DOMContentLoaded', function () {
         jsonResultDiv.innerHTML = return_val;
         jsonResultDiv.hidden = false;
 
-      }, function (errorMessage) {
+      },  (errorMessage) => {
         getElement('status').innerHTML = 'ERROR. ' + errorMessage;
         getElement('status').hidden = false;
       });
     }
 
     // activity feed click handler
-    getElement("feed").onclick = function () {
+    getElement("feed").onclick = () => {
       // get the xml feed
-      getJIRAFeed(function (url, xmlDoc) {
+      getJIRAFeed( (url, xmlDoc) => {
         getElement('status').innerHTML = 'Activity query: ' + url + '\n';
         getElement('status').hidden = false;
 
@@ -181,13 +180,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         feedResultDiv.hidden = false;
 
-      }, function (errorMessage) {
+      }, (errorMessage) => {
         getElement('status').innerHTML = 'ERROR. ' + errorMessage;
         getElement('status').hidden = false;
       });
     };
 
-  }).catch(function (errorMessage) {
+  }).catch( (errorMessage) => {
     getElement('status').innerHTML = 'ERROR. ' + errorMessage;
     getElement('status').hidden = false;
   });
