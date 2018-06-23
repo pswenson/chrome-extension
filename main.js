@@ -1,6 +1,7 @@
 // utility to get a dom element
 const getElement = (elementId) => document.getElementById(elementId);
 
+//todo bad user returns nothing, perhaps a user not found/auth error?
 
 const getJIRAFeed = (callback, errorCallback) => {
   var user = getElement("user").value;
@@ -87,7 +88,9 @@ const displayQueryResults = (response) => {
 // Create HTML output to display the search results.
 // results.json in the "json_results" folder contains a sample of the API response
 // hint: you may run the application as well if you fix the bug. 
-// 
+//
+
+  //TODO consolidate with the feed response?
   let issues = response.issues;
   // is a for in or for of appropriate?
   var text = "";
@@ -108,45 +111,44 @@ const domify = (str) => {
 }
 
 const checkProjectExists = async () =>  {
-  console.log("HI!");
   try {
     //todo the SUN project is hard-coded
     return await http_request("https://jira.secondlife.com/rest/api/2/project/SUN", "json");
     //todo force error and see what happens
   } catch (errorMessage) {
-    getElement('status').innerHTML = 'ERROR. ' + errorMessage;
-    getElement('status').hidden = false;
+    setErrorMessage(errorMessage);
   }
+}
+
+const setStatusMessage = (message) => {
+  getElement('status').innerHTML = message;
+  getElement('status').hidden = false;
+}
+
+const setErrorMessage = (errorMessage) => {
+  setStatusMessage(`ERROR: ${errorMessage}`);
 }
 
 // Setup
 //todo this function is way too big, break it up!
 document.addEventListener('DOMContentLoaded', () => {
-  console.log("DOM!");
   // if logged in, setup listeners
   //TODO handle if project doesn't exist, show error message?
 
   checkProjectExists().then( () => {
     loadSavedOptions();
-    // query click handler
     getElement("query").onclick = () => {
-      // build query
       let jiraQueryUrl = buildJQL();
-      getElement('status').innerHTML = 'Performing JIRA search for ' + jiraQueryUrl;
-      getElement('status').hidden = false;
+      setStatusMessage('Performing JIRA search for ' + jiraQueryUrl);
       // perform the search
       getQueryResults(jiraQueryUrl, (return_val) => {
+        setStatusMessage('Query term: ' + jiraQueryUrl + '\n');
         // render the results
-        getElement('status').innerHTML = 'Query term: ' + jiraQueryUrl + '\n';
-        getElement('status').hidden = false;
-
         var jsonResultDiv = getElement('query-result');
         jsonResultDiv.innerHTML = return_val;
         jsonResultDiv.hidden = false;
-
       },  (errorMessage) => {
-        getElement('status').innerHTML = 'ERROR. ' + errorMessage;
-        getElement('status').hidden = false;
+        setErrorMessage(errorMessage);
       });
     }
 
@@ -154,8 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     getElement("feed").onclick = () => {
       // get the xml feed
       getJIRAFeed( (url, xmlDoc) => {
-        getElement('status').innerHTML = 'Activity query: ' + url + '\n';
-        getElement('status').hidden = false;
+        setStatusMessage('Activity query: ' + url + '\n');
 
         // render result
         var feed = xmlDoc.getElementsByTagName('feed');
@@ -174,20 +175,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (list.childNodes.length > 0) {
           feedResultDiv.innerHTML = list.outerHTML;
         } else {
-          getElement('status').innerHTML = 'There are no activity results.';
-          getElement('status').hidden = false;
+          setStatusMessage('There are no activity results.');
         }
 
         feedResultDiv.hidden = false;
 
       }, (errorMessage) => {
-        getElement('status').innerHTML = 'ERROR. ' + errorMessage;
-        getElement('status').hidden = false;
+        setErrorMessage(errorMessage);
       });
     };
 
   }).catch( (errorMessage) => {
-    getElement('status').innerHTML = 'ERROR. ' + errorMessage;
-    getElement('status').hidden = false;
+    setErrorMessage(errorMessage);
   });
 });
