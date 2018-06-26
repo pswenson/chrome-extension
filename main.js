@@ -56,15 +56,17 @@ const buildJQL = () => {
   return jqlUrl;
 }
 
-// rename to build html results
-const displayQueryResults = (response) => {
-//todo parse the response + create HTML
-// 
-// Create HTML output to display the search results.
-// results.json in the "json_results" folder contains a sample of the API response
-// hint: you may run the application as well if you fix the bug. 
-//
-  //TODO consolidate with the feed response?
+
+// todo pass in status message (result count)
+
+const renderQueryResults = (html) => {
+  var jsonResultDiv = getElement('query-result');
+  jsonResultDiv.innerHTML = html;
+  jsonResultDiv.hidden = false;
+}
+
+
+const buildTicketStatusQueryHtml = (response) => {
   const issues = response.issues;
   // is a for in or for of appropriate?
   var text = "";
@@ -72,7 +74,6 @@ const displayQueryResults = (response) => {
     const issue = issues[issueCount];
     text +=  `<a href="${issue.self}">${issue.key}</a> | ${issue.fields.summary}  | <img src="${issue.fields.status.iconUrl}"><br/>`;
   }
-  console.log("issues", issues);
   return `<p>${text}</p>`;
 }
 
@@ -90,6 +91,10 @@ const checkProjectExists = async () =>  {
   } catch (errorMessage) {
     setErrorMessage(errorMessage);
   }
+}
+
+const clearResults = () => {
+  getElement('query-result').innerHTML = "";
 }
 
 const setStatusMessage = (message) => {
@@ -111,7 +116,7 @@ const getQueryResults = async (searchTerm, callback, errorCallback) => {
   try {
     const response = await http_request(searchTerm, "json");
     //todo this doesn't belong here, got back to getQueryResults caller and handle there
-    callback(displayQueryResults(response));
+    callback(buildTicketStatusQueryHtml(response));
   } catch (error) {
     errorCallback(error);
   }
@@ -122,25 +127,22 @@ const setupQueryHandler = () => {
   getElement("query").onclick = () => {
     const jiraQueryUrl = buildJQL();
     setStatusMessage('Performing JIRA search for ' + jiraQueryUrl);
+    clearResults();
     // perform the search
-    getQueryResults(jiraQueryUrl, (return_val) => {
-      setStatusMessage('Query term: ' + jiraQueryUrl + '\n');
-      // render the results
-      var jsonResultDiv = getElement('query-result');
-      jsonResultDiv.innerHTML = return_val;
-      jsonResultDiv.hidden = false;
+    getQueryResults(jiraQueryUrl, (html) => {
+      renderQueryResults(html);
     },  (errorMessage) => {
       setErrorMessage(errorMessage);
     });
   }
 }
 
+
 const getJIRAFeed = (callback, errorCallback) => {
   const user = getElement("user").value;
   if (user == undefined) return;
 
   const url = `https://jira.secondlife.com/activity?maxResults=50&streams=user+IS+${user}&providers=issues`;
-  console.log("feedurl=>", url);
   http_request(url, "").then( (response) => {
     // empty response type allows the request.responseXML property to be returned in the makeRequest call
     callback(url, response);
@@ -166,14 +168,12 @@ const setupFeedHandler = () => {
         list.appendChild(item);
       }
 
-      var feedResultDiv = getElement('query-result');
       if (list.childNodes.length > 0) {
-        feedResultDiv.innerHTML = list.outerHTML;
+        renderQueryResults(list.outerHTML);
       } else {
         setStatusMessage('There are no activity results.');
       }
 
-      feedResultDiv.hidden = false;
 
     }, (errorMessage) => {
       setErrorMessage(errorMessage);
