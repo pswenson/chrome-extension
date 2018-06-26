@@ -61,16 +61,24 @@ const buildFeedResultHtml = (xmlFeedResults) => {
   return html;
 }
 
-//todo change to <ul>
 const buildTicketStatusQueryHtml = (response) => {
   const issues = response.issues;
   // is a for in or for of appropriate?
   var text = "";
+  const list = document.createElement('ul');
   for (var issueCount = 0; issueCount < issues.length; issueCount++) {
     const issue = issues[issueCount];
-    text +=  `<a href="${issue.self}">${issue.key}</a> | ${issue.fields.summary}  | <img src="${issue.fields.status.iconUrl}"><br/>`;
+    const item = document.createElement('li');
+    const issueLink = `<a href="${issue.self}">${issue.key}</a>`;
+    const issueSummary = issue.fields.summary;
+    //todo rollover with status text?
+    const issueStatus = `<img src="${issue.fields.status.iconUrl}">`;
+    item.innerHTML = `${issueLink} - ${issueSummary} ${issueStatus}`;
+    list.appendChild(item);
   }
-  return `<p>${text}</p>`;
+  // return empty string if no results
+  const html = list.hasChildNodes() ? list.outerHTML : "";
+  return html;
 }
 
 //todo evaluate breaking up into multiple files
