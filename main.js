@@ -33,27 +33,8 @@ const setupFeedHandler = () => {
     // get the xml feed
     getJIRAFeed( (url, xmlDoc) => {
       setStatusMessage('Activity query: ' + url + '\n');
-
-      // render result
-      const feed = xmlDoc.getElementsByTagName('feed');
-      const entries = feed[0].getElementsByTagName("entry");
-      const list = document.createElement('ul');
-
-      for (var index = 0; index < entries.length; index++) {
-        const html = entries[index].getElementsByTagName("title")[0].innerHTML;
-        const updated = entries[index].getElementsByTagName("updated")[0].innerHTML;
-        const item = document.createElement('li');
-        item.innerHTML = new Date(updated).toLocaleString() + " - " + domify(html);
-        list.appendChild(item);
-      }
-
-      if (list.childNodes.length > 0) {
-        renderQueryResults(list.outerHTML);
-      } else {
-        setStatusMessage('There are no activity results.');
-      }
-
-
+      const html = buildFeedResultHtml(xmlDoc);
+      renderQueryResults(html);
     }, (errorMessage) => {
       setErrorMessage(errorMessage);
     });
@@ -61,6 +42,36 @@ const setupFeedHandler = () => {
 }
 
 
+const buildFeedResultHtml = (xmlFeedResults) => {
+  //parse the xml feed
+  const feed = xmlFeedResults.getElementsByTagName('feed');
+  const entries = feed[0].getElementsByTagName("entry");
+  const list = document.createElement('ul');
+
+  // build html from xml feed
+  for (var index = 0; index < entries.length; index++) {
+    const html = entries[index].getElementsByTagName("title")[0].innerHTML;
+    const updated = entries[index].getElementsByTagName("updated")[0].innerHTML;
+    const item = document.createElement('li');
+    item.innerHTML = new Date(updated).toLocaleString() + " - " + domify(html);
+    list.appendChild(item);
+  }
+  // return empty string if no results
+  const html = list.hasChildNodes() ? list.outerHTML : "";
+  return html;
+}
+
+//todo change to <ul>
+const buildTicketStatusQueryHtml = (response) => {
+  const issues = response.issues;
+  // is a for in or for of appropriate?
+  var text = "";
+  for (var issueCount = 0; issueCount < issues.length; issueCount++) {
+    const issue = issues[issueCount];
+    text +=  `<a href="${issue.self}">${issue.key}</a> | ${issue.fields.summary}  | <img src="${issue.fields.status.iconUrl}"><br/>`;
+  }
+  return `<p>${text}</p>`;
+}
 
 //todo evaluate breaking up into multiple files
 //todo unit tests
@@ -119,7 +130,12 @@ const http_request = (url, responseType) => {
 }
 
 const renderQueryResults = (html) => {
+  clearResults();
   var jsonResultDiv = getElement('query-result');
+  if (html == "") {
+    setStatusMessage("No results");
+    return;
+  }
   jsonResultDiv.innerHTML = html;
   jsonResultDiv.hidden = false;
 }
@@ -149,21 +165,6 @@ const buildJQL = () => {
 }
 
 
-// todo pass in status message (result count)
-
-
-//todo change to <ul>
-const buildTicketStatusQueryHtml = (response) => {
-  const issues = response.issues;
-  // is a for in or for of appropriate?
-  var text = "";
-  for (var issueCount = 0; issueCount < issues.length; issueCount++) {
-    const issue = issues[issueCount];
-    text +=  `<a href="${issue.self}">${issue.key}</a> | ${issue.fields.summary}  | <img src="${issue.fields.status.iconUrl}"><br/>`;
-  }
-  return `<p>${text}</p>`;
-}
-
 const checkProjectExists = async () =>  {
   try {
     //todo the SUN project is hard-coded
@@ -191,7 +192,7 @@ const getQueryResults = async (searchTerm, callback, errorCallback) => {
   }
 }
 
-
+//todo  http_request handling should be consistent for getQueryResults + getJiraFeed
 
 const getJIRAFeed = (callback, errorCallback) => {
   const user = getElement("user").value;
