@@ -1,3 +1,6 @@
+//todo evaluate breaking up into multiple files
+//todo unit tests
+
 // utility to get a dom element
 const getElement = (elementId) => document.getElementById(elementId);
 
@@ -42,7 +45,6 @@ const loadSavedOptions = () => {
   });
 }
 
-//todo should these be constants?
 // build the jira query
 //todo ideally pass in values here instead of reading from document
 const buildJQL = () => {
@@ -107,7 +109,7 @@ const setErrorMessage = (errorMessage) => {
  */
 const getQueryResults = async (searchTerm, callback, errorCallback) => {
   try {
-    var response = await http_request(searchTerm, "json");
+    const response = await http_request(searchTerm, "json");
     //todo this doesn't belong here, got back to getQueryResults caller and handle there
     callback(displayQueryResults(response));
   } catch (error) {
@@ -134,10 +136,11 @@ const setupQueryHandler = () => {
 }
 
 const getJIRAFeed = (callback, errorCallback) => {
-  var user = getElement("user").value;
+  const user = getElement("user").value;
   if (user == undefined) return;
 
-  var url = `https://jira.secondlife.com/activity?maxResults=50&streams=user+IS+${user}&providers=issues`;
+  const url = `https://jira.secondlife.com/activity?maxResults=50&streams=user+IS+${user}&providers=issues`;
+  console.log("feedurl=>", url);
   http_request(url, "").then( (response) => {
     // empty response type allows the request.responseXML property to be returned in the makeRequest call
     callback(url, response);
@@ -151,14 +154,14 @@ const setupFeedHandler = () => {
       setStatusMessage('Activity query: ' + url + '\n');
 
       // render result
-      var feed = xmlDoc.getElementsByTagName('feed');
-      var entries = feed[0].getElementsByTagName("entry");
-      var list = document.createElement('ul');
+      const feed = xmlDoc.getElementsByTagName('feed');
+      const entries = feed[0].getElementsByTagName("entry");
+      const list = document.createElement('ul');
 
       for (var index = 0; index < entries.length; index++) {
-        var html = entries[index].getElementsByTagName("title")[0].innerHTML;
-        var updated = entries[index].getElementsByTagName("updated")[0].innerHTML;
-        var item = document.createElement('li');
+        const html = entries[index].getElementsByTagName("title")[0].innerHTML;
+        const updated = entries[index].getElementsByTagName("updated")[0].innerHTML;
+        const item = document.createElement('li');
         item.innerHTML = new Date(updated).toLocaleString() + " - " + domify(html);
         list.appendChild(item);
       }
