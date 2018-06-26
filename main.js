@@ -1,129 +1,20 @@
-//todo evaluate breaking up into multiple files
-//todo unit tests
+// -------- setup  load settings + register handlers -------- //
 
-// utility to get a dom element
-const getElement = (elementId) => document.getElementById(elementId);
+document.addEventListener('DOMContentLoaded', () => {
+  // if logged in, setup listeners
+  //TODO handle if project doesn't exist, show error message?
 
-//todo bad user returns nothing, perhaps a user not found/auth error?
-
-const http_request = (url, responseType) => {
-  return new Promise( (resolve, reject) => {
-    var req = new XMLHttpRequest();
-    req.open('GET', url);
-    req.responseType = responseType;
-
-    req.onload = () => {
-      var response = responseType ? req.response : req.responseXML;
-      if (response && response.errorMessages && response.errorMessages.length > 0) {
-        reject(response.errorMessages[0]);
-        return;
-      }
-      resolve(response);
-    };
-
-    // Handle network errors
-    req.onerror = () => {
-      reject(Error("Network Error"));
-    }
-    req.onreadystatechange = () => {
-      if (req.readyState == 4 && req.status == 401) {
-        reject("You must be logged in to JIRA to see this project.");
-      }
-    }
-
-    req.send();
-  });
-}
-
-const loadSavedOptions = () => {
-  chrome.storage.sync.get({
-    project: 'Sunshine',
-    user: 'nyx.linden'
-  }, (items) => {
-    getElement('project').value = items.project;
-    getElement('user').value = items.user;
-  });
-}
-
-// build the jira query
-//todo ideally pass in values here instead of reading from document
-const buildJQL = () => {
-  const callbackBase = "https://jira.secondlife.com/rest/api/2/search?jql=";
-  const project = getElement("project").value;
-  const status = getElement("statusSelect").value;
-  const inStatusFor = getElement("daysPast").value
-  const jqlUrl = `${callbackBase}project=${project}+and+status=${status}+and+status+changed+to+${status}+before+-${inStatusFor}d&fields=id,status,key,assignee,summary&maxresults=100`;
-  return jqlUrl;
-}
-
-
-// todo pass in status message (result count)
-
-const renderQueryResults = (html) => {
-  var jsonResultDiv = getElement('query-result');
-  jsonResultDiv.innerHTML = html;
-  jsonResultDiv.hidden = false;
-}
-
-
-const buildTicketStatusQueryHtml = (response) => {
-  const issues = response.issues;
-  // is a for in or for of appropriate?
-  var text = "";
-  for (var issueCount = 0; issueCount < issues.length; issueCount++) {
-    const issue = issues[issueCount];
-    text +=  `<a href="${issue.self}">${issue.key}</a> | ${issue.fields.summary}  | <img src="${issue.fields.status.iconUrl}"><br/>`;
-  }
-  return `<p>${text}</p>`;
-}
-
-// utility 
-const domify = (str) => {
-  var dom = (new DOMParser()).parseFromString('<!doctype html><body>' + str, 'text/html');
-  return dom.body.textContent;
-}
-
-const checkProjectExists = async () =>  {
-  try {
-    //todo the SUN project is hard-coded
-    return await http_request("https://jira.secondlife.com/rest/api/2/project/SUN", "json");
-    //todo force error and see what happens
-  } catch (errorMessage) {
+  checkProjectExists().then( () => {
+    loadSavedOptions();
+    setupQueryHandler();
+    setupFeedHandler();
+  }).catch( (errorMessage) => {
     setErrorMessage(errorMessage);
-  }
-}
+  });
+});
 
-const clearResults = () => {
-  getElement('query-result').innerHTML = "";
-}
-
-const setStatusMessage = (message) => {
-  getElement('status').innerHTML = message;
-  getElement('status').hidden = false;
-}
-
-const setErrorMessage = (errorMessage) => {
-  setStatusMessage(`ERROR: ${errorMessage}`);
-}
-
-/**
- * @param {string} searchTerm - Search term for JIRA Query.
- * @param {ß(string)} callback - Called when the query results have been
- *   formatted for rendering.
- * @param {function(string)} errorCallback - Called when the query or call fails.
- */
-const getQueryResults = async (searchTerm, callback, errorCallback) => {
-  try {
-    const response = await http_request(searchTerm, "json");
-    //todo this doesn't belong here, got back to getQueryResults caller and handle there
-    callback(buildTicketStatusQueryHtml(response));
-  } catch (error) {
-    errorCallback(error);
-  }
-}
 
 const setupQueryHandler = () => {
-//todo does this belong here or used by feed handler?
   getElement("query").onclick = () => {
     const jiraQueryUrl = buildJQL();
     setStatusMessage('Performing JIRA search for ' + jiraQueryUrl);
@@ -135,18 +26,6 @@ const setupQueryHandler = () => {
       setErrorMessage(errorMessage);
     });
   }
-}
-
-
-const getJIRAFeed = (callback, errorCallback) => {
-  const user = getElement("user").value;
-  if (user == undefined) return;
-
-  const url = `https://jira.secondlife.com/activity?maxResults=50&streams=user+IS+${user}&providers=issues`;
-  http_request(url, "").then( (response) => {
-    // empty response type allows the request.responseXML property to be returned in the makeRequest call
-    callback(url, response);
-  }, errorCallback);
 }
 
 const setupFeedHandler = () => {
@@ -181,16 +60,149 @@ const setupFeedHandler = () => {
   };
 }
 
-// Setup
-document.addEventListener('DOMContentLoaded', () => {
-  // if logged in, setup listeners
-  //TODO handle if project doesn't exist, show error message?
 
-  checkProjectExists().then( () => {
-    loadSavedOptions();
-    setupQueryHandler();
-    setupFeedHandler();
-  }).catch( (errorMessage) => {
-    setErrorMessage(errorMessage);
+
+//todo evaluate breaking up into multiple files
+//todo unit tests
+
+// -------- utility functions -------- //
+const domify = (str) => {
+  var dom = (new DOMParser()).parseFromString('<!doctype html><body>' + str, 'text/html');
+  return dom.body.textContent;
+}
+
+// utility to get a dom element
+const getElement = (elementId) => document.getElementById(elementId);
+
+//todo bad user returns nothing, perhaps a user not found/auth error?
+
+const clearResults = () => {
+  getElement('query-result').innerHTML = "";
+}
+
+const setStatusMessage = (message) => {
+  getElement('status').innerHTML = message;
+  getElement('status').hidden = false;
+}
+
+const setErrorMessage = (errorMessage) => {
+  setStatusMessage(`ERROR: ${errorMessage}`);
+}
+
+const http_request = (url, responseType) => {
+  return new Promise( (resolve, reject) => {
+    var req = new XMLHttpRequest();
+    req.open('GET', url);
+    req.responseType = responseType;
+
+    req.onload = () => {
+      var response = responseType ? req.response : req.responseXML;
+      if (response && response.errorMessages && response.errorMessages.length > 0) {
+        reject(response.errorMessages[0]);
+        return;
+      }
+      resolve(response);
+    };
+
+    // Handle network errors
+    req.onerror = () => {
+      reject(Error("Network Error"));
+    }
+    req.onreadystatechange = () => {
+      if (req.readyState == 4 && req.status == 401) {
+        reject("You must be logged in to JIRA to see this project.");
+      }
+    }
+
+    req.send();
   });
-});
+}
+
+const renderQueryResults = (html) => {
+  var jsonResultDiv = getElement('query-result');
+  jsonResultDiv.innerHTML = html;
+  jsonResultDiv.hidden = false;
+}
+
+
+// -------- end utility functions -------- //
+
+const loadSavedOptions = () => {
+  chrome.storage.sync.get({
+    project: 'Sunshine',
+    user: 'nyx.linden'
+  }, (items) => {
+    getElement('project').value = items.project;
+    getElement('user').value = items.user;
+  });
+}
+
+// build the jira query
+//todo ideally pass in values here instead of reading from document
+const buildJQL = () => {
+  const callbackBase = "https://jira.secondlife.com/rest/api/2/search?jql=";
+  const project = getElement("project").value;
+  const status = getElement("statusSelect").value;
+  const inStatusFor = getElement("daysPast").value
+  const jqlUrl = `${callbackBase}project=${project}+and+status=${status}+and+status+changed+to+${status}+before+-${inStatusFor}d&fields=id,status,key,assignee,summary&maxresults=100`;
+  return jqlUrl;
+}
+
+
+// todo pass in status message (result count)
+
+
+//todo change to <ul>
+const buildTicketStatusQueryHtml = (response) => {
+  const issues = response.issues;
+  // is a for in or for of appropriate?
+  var text = "";
+  for (var issueCount = 0; issueCount < issues.length; issueCount++) {
+    const issue = issues[issueCount];
+    text +=  `<a href="${issue.self}">${issue.key}</a> | ${issue.fields.summary}  | <img src="${issue.fields.status.iconUrl}"><br/>`;
+  }
+  return `<p>${text}</p>`;
+}
+
+const checkProjectExists = async () =>  {
+  try {
+    //todo the SUN project is hard-coded
+    return await http_request("https://jira.secondlife.com/rest/api/2/project/SUN", "json");
+    //todo force error and see what happens
+  } catch (errorMessage) {
+    setErrorMessage(errorMessage);
+  }
+}
+
+
+/**
+ * @param {string} searchTerm - Search term for JIRA Query.
+ * @param {ß(string)} callback - Called when the query results have been
+ *   formatted for rendering.
+ * @param {function(string)} errorCallback - Called when the query or call fails.
+ */
+const getQueryResults = async (searchTerm, callback, errorCallback) => {
+  try {
+    const response = await http_request(searchTerm, "json");
+    //todo this doesn't belong here, got back to getQueryResults caller and handle there
+    callback(buildTicketStatusQueryHtml(response));
+  } catch (error) {
+    errorCallback(error);
+  }
+}
+
+
+
+const getJIRAFeed = (callback, errorCallback) => {
+  const user = getElement("user").value;
+  if (user == undefined) return;
+
+  const url = `https://jira.secondlife.com/activity?maxResults=50&streams=user+IS+${user}&providers=issues`;
+  http_request(url, "").then( (response) => {
+    // empty response type allows the request.responseXML property to be returned in the makeRequest call
+    callback(url, response);
+  }, errorCallback);
+}
+
+
+
