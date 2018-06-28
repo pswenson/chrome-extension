@@ -28,3 +28,12 @@ A chrome extension that queries a public JIRA API (https://jira.secondlife.com).
 ## Tips
 * [Installing a local chrome extension](https://developer.chrome.com/extensions/getstarted#unpacked)
 * The first field in the extension should default to the word "Sunshine", if it does not, it means there is a bug that needs to be fixed first.
+
+## TODO (limited time available)
+* unit tests need to be written (select test frameowrk, will probably trigger some more refactoring to make code more testable.)
+* async calls should be consistent
+* error handling should be made consistent
+* consider breaking into multiple files to make more managable, main.js is fairly large
+
+
+

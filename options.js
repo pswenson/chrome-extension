@@ -1,6 +1,3 @@
-//todo move functions out of callback and reference them
-
-
 // Saves options to chrome.storage
 function save_options() {
   var prj = document.getElementById('project').value;
@@ -22,7 +19,6 @@ function save_options() {
 
 // Restores select box and checkbox state using the preferences
 // stored in chrome.storage.
-//todo project and user are hard-coded
 function restore_options() {
   chrome.storage.sync.get({
     project: 'Sunshine',
@@ -36,4 +32,3 @@ function restore_options() {
 }
 
 document.addEventListener('DOMContentLoaded', restore_options);
-console.log("yikes");

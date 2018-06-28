@@ -2,8 +2,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // if logged in, setup listeners
-  //TODO handle if project doesn't exist, show error message?
-
   checkProjectExists().then( () => {
     loadSavedOptions();
     setupQueryHandler();
@@ -30,7 +28,6 @@ const setupQueryHandler = () => {
 
 const setupFeedHandler = () => {
   getElement("feed").onclick = () => {
-    // get the xml feed
     getJIRAFeed( (url, xmlDoc) => {
       setStatusMessage('Activity query: ' + url + '\n');
       const html = buildFeedResultHtml(xmlDoc);
@@ -40,7 +37,6 @@ const setupFeedHandler = () => {
     });
   };
 }
-
 
 const buildFeedResultHtml = (xmlFeedResults) => {
   //parse the xml feed
@@ -140,7 +136,7 @@ const http_request = (url, responseType) => {
 const renderQueryResults = (html) => {
   clearResults();
   var jsonResultDiv = getElement('query-result');
-  if (html == "") {
+  if (!html) {
     setStatusMessage("No results");
     return;
   }
@@ -175,14 +171,11 @@ const buildJQL = () => {
 
 const checkProjectExists = async () =>  {
   try {
-    //todo the SUN project is hard-coded
     return await http_request("https://jira.secondlife.com/rest/api/2/project/SUN", "json");
-    //todo force error and see what happens
   } catch (errorMessage) {
     setErrorMessage(errorMessage);
   }
 }
-
 
 /**
  * @param {string} searchTerm - Search term for JIRA Query.
@@ -193,14 +186,11 @@ const checkProjectExists = async () =>  {
 const getQueryResults = async (searchTerm, callback, errorCallback) => {
   try {
     const response = await http_request(searchTerm, "json");
-    //todo this doesn't belong here, got back to getQueryResults caller and handle there
     callback(buildTicketStatusQueryHtml(response));
   } catch (error) {
     errorCallback(error);
   }
 }
-
-//todo  http_request handling should be consistent for getQueryResults + getJiraFeed
 
 const getJIRAFeed = (callback, errorCallback) => {
   const user = getElement("user").value;
